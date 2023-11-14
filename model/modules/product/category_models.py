@@ -24,6 +24,9 @@ class ProductCategoryCreateModel(BaseModel):
     name: str
     description: str
     
+class ProductCategoryNameModel(BaseModel):
+    name: str
+    
 
 class ProductCategoryFilterModel(BaseModel):
     name: Optional[str] | None = None

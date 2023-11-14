@@ -41,3 +41,13 @@ class ProductRepository:
         return self.db.query(Product)\
             .filter(and_(Product.categoryId == id, Product.name == name))\
             .first()
+            
+    def findOneId(self, id: int):
+        return self.db.query(Product)\
+            .filter(Product.id == id)\
+            .first()
+    
+    def findOneCategoryId(self, categoryId: int):
+        return self.db.query(Product)\
+            .filter(Product.categoryId == categoryId)\
+            .all()

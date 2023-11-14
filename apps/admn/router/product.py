@@ -18,7 +18,6 @@ from schema.product_module import Product
 
 
 router = APIRouter(
-    prefix="/product",
     tags=["Product"],
     # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
@@ -35,7 +34,7 @@ def indexAll(
     return http.successResponse(data = products)
 
 
-@router.get('/', response_model=List[ProductModel] , name="admn_product_index")
+@router.get('/product', response_model=List[ProductModel] , name="admn_product_index")
 def getIndex (
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     filterModel: ProductPaginateResponseModel = None,
@@ -44,7 +43,7 @@ def getIndex (
     return indexAll(accessUser=accessUser, filterModel=filterModel, db=db)
 
 
-@router.post('/', response_model=List[ProductModel], name="admn_product_index")
+@router.post('/product', response_model=List[ProductModel], name="admn_product_index")
 def postIndex (
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     filterModel: ProductPaginateResponseModel,
@@ -53,7 +52,7 @@ def postIndex (
     return indexAll(accessUser=accessUser, filterModel=filterModel, db=db)
 
 
-@router.post('/create', response_model=ProductModel, name="admn_product_create", status_code=201)
+@router.post('/product/create', response_model=ProductModel, name="admn_product_create", status_code=201)
 def create(
     createModel: ProductCreateModel,
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
@@ -62,16 +61,24 @@ def create(
     productCategory_repo = ProductCategoryRepository(db)
     product_repo = ProductRepository(db)
     
-    categoryId = createModel.categoryId
-    productCategory = productCategory_repo.findOneId(categoryId)
+    productCategory = productCategory_repo.findOneName(name = createModel.category)
     if not productCategory:
         return http.notFoundResponse(message="ProductCategory not found")
 
     product = product_repo.findOneName(id = productCategory.id, name = createModel.name)
     if product:
         raise HTTPException(status_code=400, detail="Product already exists")
+    
+    model = {
+        "name": createModel.name,
+        "description": createModel.description,
+        "price": createModel.price,
+        "unit": createModel.unit,
+        "enabled": createModel.enabled,
+        "categoryId": productCategory.id
+    }
 
-    productCreated = Product(**createModel.__dict__)
+    productCreated = Product(**model)
     productCreated.userCreatedId = accessUser.id
 
     db.add(productCreated)
@@ -83,14 +90,14 @@ def create(
     return http.createdResponse(data=productModel)
 
 
-@router.get('/{id}/detail', response_model=ProductModel, name="admn_product_detail")
+@router.get('/product/{id}/detail', response_model=ProductModel, name="admn_product_detail")
 def detail (
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     id: Annotated[int, Path(title="Product ID")],
     db: Session = Depends(get_db)
 ):
     repo = ProductRepository(db)
-    product = repo.find(id)
+    product = repo.findOneId(id)
 
     if not product:
         return http.notFoundResponse(message="Product not found")
@@ -98,7 +105,48 @@ def detail (
     return http.successResponse(data = product)
 
 
-@router.put('/{id}/update', response_model=ProductModel, name="admn_product_update")
+@router.get('/{categoryId}/product', response_model=ProductModel, name="admn_product_category_detail")
+def detail (
+    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
+    categoryId: Annotated[int, Path(title="productCategory ID")],
+    db: Session = Depends(get_db)
+):
+    product_repo = ProductRepository(db)
+    
+    product = product_repo.findOneCategoryId(categoryId)
+    if not product:
+        return http.notFoundResponse(message="Product not found")
+
+    return http.successResponse(data = product)
+
+
+@router.get('/{categoryId}/unit', name="admn_product_category_unit")
+def unit (
+    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
+    categoryId: Annotated[int, Path(title="productCategory ID")],
+    db: Session = Depends(get_db)
+):
+    product_repo = ProductRepository(db)
+    
+    product = product_repo.findOneCategoryId(categoryId)
+    if not product:
+        return http.notFoundResponse(message="Product not found")
+    
+    unit = {"unit": 0,
+            "productUnit": 0}
+    
+    for item in product:
+        if item and item.name:
+            unit["productUnit"] += 1
+
+    for item in product:
+        if item and item.unit:
+            unit["unit"] += int(item.unit)
+
+    return http.successResponse(data = unit)
+
+
+@router.put('/product/{id}/update', response_model=ProductModel, name="admn_product_update")
 def update(
     id: Annotated[int, Path(title="Product id")],
     updateModel: ProductCreateModel,
@@ -144,7 +192,7 @@ def update(
 
 
 
-@router.delete('/{id}/delete', response_model=ProductModel, name="admn_product_delete")
+@router.delete('/product/{id}/delete', response_model=ProductModel, name="admn_product_delete")
 def delete(
     id: Annotated[int, Path(title="Product id")],
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
@@ -163,7 +211,7 @@ def delete(
     return http.successResponse(data=productModel, message="Product deleted")
 
 
-@router.get('/filter', name="admn_product_filter", status_code=201)
+@router.get('/product/filter', name="admn_product_filter", status_code=201)
 def create(
     # accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     db: Session = Depends(get_db),

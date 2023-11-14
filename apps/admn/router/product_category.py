@@ -9,7 +9,7 @@ from config.database import get_db
 from lib import auth_service2, http
 # Model
 from model.modules.product.category_models import ProductCategoryModel, ProductCategoryCreateModel, \
-    ProductCategoryFilterModel, ProductCategoryListRequestModel, ProductCategoryPaginateResponseModel
+    ProductCategoryFilterModel, ProductCategoryListRequestModel, ProductCategoryPaginateResponseModel, ProductCategoryNameModel
 from model.common import PaginateResponseModel
 # Repo
 from repository.product.category_repository import ProductCategoryRepository
@@ -59,6 +59,7 @@ def create(
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     db: Session = Depends(get_db)
 ):
+    print("hehe", createModel)
     productCategory_repo = ProductCategoryRepository(db)
     
     productCategory = productCategory_repo.findOneName(name = createModel.name)
@@ -107,11 +108,30 @@ def detail(
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     db: Session = Depends(get_db)
 ):
-    productCategory = ProductCategoryRepository(db).findOneId(id)
+    productCategory_repo = ProductCategoryRepository(db)
+    
+    productCategory = productCategory_repo.findOneId(id)
     if not productCategory:
         raise HTTPException(status_code=404, detail="ProductCategory not found")
     
     jsonResult = jsonable_encoder(productCategory)
+    return JSONResponse(jsonResult)
+
+@router.get('/name', response_model=ProductCategoryNameModel, name="admn_product_category_name")
+def detail(
+    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
+    db: Session = Depends(get_db)
+):
+    productCategory_repo = ProductCategoryRepository(db)
+    
+    productCategory = productCategory_repo.find()
+    
+    category = {}
+    
+    for item in productCategory:
+        category[item.id] = item.name
+    
+    jsonResult = jsonable_encoder(category)
     return JSONResponse(jsonResult)
 
 

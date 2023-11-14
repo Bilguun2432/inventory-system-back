@@ -26,6 +26,7 @@ class Product(Base):
     categoryId: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("product_category.id"), name="category_id")
     name: Mapped[str] = mapped_column(String(100))
     price: Mapped[int] = mapped_column(Integer, name="price", nullable=True)
+    unit: Mapped[int] = mapped_column(Integer)
     description: Mapped[Optional[str]] = mapped_column(String(255))
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     isDeleted: Mapped[bool] = mapped_column(Boolean, name="is_deleted", default=False)

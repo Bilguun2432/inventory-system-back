@@ -14,6 +14,7 @@ class ProductModel(BaseModel):
     categoryId: Optional[int]
     name: str
     price: Optional[int]
+    unit: int
     description: Optional[str]
     packageCode: Optional[str] | None = None
     productCompletionId: int | None = None
@@ -24,10 +25,12 @@ class ProductModel(BaseModel):
 
 
 class ProductCreateModel(BaseModel):
-    categoryId: Optional[int] | None = None
+    category: str
     name: str
     description: Optional[str] | None = None
     price:  Optional[int] = None
+    unit: int
+    enabled: Optional[bool] | None = None
 
 
 class ProductFilterModel(BaseModel):

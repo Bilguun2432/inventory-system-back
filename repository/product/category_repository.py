@@ -45,3 +45,7 @@ class ProductCategoryRepository:
     def findOneName(self, name: str):
         return self.db.query(ProductCategory)\
             .filter(ProductCategory.name == name).first()
+            
+    def find(self):
+        return self.db.query(ProductCategory)\
+            .all()
