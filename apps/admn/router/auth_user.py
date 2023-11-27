@@ -9,13 +9,12 @@ from config.database import get_db
 from lib import auth_service2, http
 # Model
 from model.common import PaginateResponseModel
-from model.modules.auth.role_models import AuthRoleAddModel
 from model.modules.auth.user_models import AuthUserCreateModel, AuthUserUpdateModel, AuthUserModel, AuthUserRoleModel
-from model.modules.auth.user_models import AuthUserListRequestModel, AuthUserPaginateResponseModel
+from model.modules.auth.user_models import AuthUserListRequestModel, AuthUserPaginateResponseModel, AuthUserMailModel
 # Repo
-from repository.user.user_repository import UserRepository, RoleRepository, UserRoleRepository
+from repository.user.user_repository import UserRepository, RoleRepository
 # Schema
-from schema.auth_module import AuthUser, AuthUserRole
+from schema.auth_module import AuthUser
 
 
 router = APIRouter(
@@ -54,38 +53,29 @@ def postIndex(
     return indexAll(accessUser=accessUser, filterModel=filterModel, db=db)
 
 
-@router.get('/{id}', response_model = AuthUserModel, name = "admn_auth_user_detail")
-def indexDetail(
-    id: Annotated[int, Path(title="AuthUser id")],
+@router.post('/create', response_model=AuthUserModel, name="admn_auth_user_create", status_code=201)
+def create(
+    model: AuthUserCreateModel,
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     db: Session = Depends(get_db)
 ):
-    repo = UserRepository(db).findOne(id)
-    if not repo:
-         raise HTTPException(status_code=404, detail="AuthUser id not found")
-    return repo
-
-
-@router.post('/create', response_model=AuthUserModel, name="admn_auth_user_create", status_code=201)
-def create(
-    authUserCreate: AuthUserCreateModel,
-    # accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
-    db: Session = Depends(get_db)
-):
-    createObj = authUserCreate.dict()
-    createObj['password'] = '123'
-    passwordPlain = createObj['password']
+    authRole_repo = RoleRepository(db)
+    
+    authRole = authRole_repo.findOneId(model.authRoleId)
+    if not authRole:
+        raise HTTPException(status_code=404, detail="AuthRole id not found")
+    
+    authUserModel = model.dict()
+    authUserModel['password'] = '123'
+    passwordPlain = authUserModel['password']
     passwordHash = auth_service2.passwordHash(passwordPlain)
-    createObj['password'] = passwordHash
-    authUser = AuthUser(**createObj)
-    print(jsonable_encoder(authUser))
+    authUserModel['password'] = passwordHash
+    
+    authUser = AuthUser(**authUserModel)
     db.add(authUser)
     db.commit() 
     db.refresh(authUser)
 
-    # result = AuthUserModel(**authUser.__dict__)
-    
-    # return result
     jsonResult = jsonable_encoder(authUser)
     return JSONResponse(jsonResult)
 
@@ -97,23 +87,67 @@ def update(
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)], 
     db: Session = Depends(get_db)
 ):
-    repo = UserRepository(db)
-    authUserDb = repo.findOne(id)
+    authUser_repo = UserRepository(db)
+    authUser = authUser_repo.findOne(id)
 
-    if not authUserDb:
+    if not authUser:
         raise HTTPException(status_code=404, detail="AuthUser not found")
 
-    authUserDb.firstname = authUserUpdate.firstname
-    authUserDb.lastname = authUserUpdate.lastname
-    authUserDb.email = authUserUpdate.email
-    authUserDb.mobile = authUserUpdate.mobile
-    authUserDb.userType = authUserUpdate.userType
+    authUser.firstname = authUserUpdate.firstname
+    authUser.lastname = authUserUpdate.lastname
+    authUser.email = authUserUpdate.email
+    authUser.mobile = authUserUpdate.mobile
+    authUser.authRoleId = authUserUpdate.authRoleId
 
     db.commit()
-    db.refresh(authUserDb)
+    db.refresh(authUser)
 
-    jsonResult = jsonable_encoder(authUserDb)
+    jsonResult = jsonable_encoder(authUser)
     return JSONResponse(jsonResult)
+
+
+@router.get('/{id}/detail', response_model = AuthUserModel, name = "admn_auth_user_detail")
+def indexDetail(
+    id: Annotated[int, Path(title="AuthUser id")],
+    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
+    db: Session = Depends(get_db)
+):
+    authUser_repo = UserRepository(db)
+    
+    authUser = authUser_repo.findOne(id)
+    if not authUser:
+         raise HTTPException(status_code=404, detail="AuthUser id not found")
+     
+    return authUser
+
+
+@router.get('/employee', name = "admn_auth_user_employee")
+def indexEmployee(
+    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
+    db: Session = Depends(get_db)
+):
+    authUser_repo = UserRepository(db)
+    
+    id = 2
+    userEmployee = authUser_repo.findEmployee(id)
+    
+    employees = {}
+    for item in userEmployee:
+        employees[item.id] = item.email
+    
+    return employees
+
+@router.get('/{email}/email', name = "admn_auth_user_role")
+def indexRole(
+    email: Annotated[str, Path(title="AuthUser email")],
+    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
+    db: Session = Depends(get_db)
+):
+    authUser_repo = UserRepository(db)
+    
+    userEmployee = authUser_repo.findOneByEmail(email)
+    
+    return userEmployee
 
 
 @router.delete('/{id}/delete', response_model=AuthUserModel, name="admn_auth_user_delete")
@@ -122,8 +156,8 @@ def delete(
     accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     db: Session = Depends(get_db)
 ):
-    repo = UserRepository(db)
-    authUserDb: AuthUser = repo.findOne(id)
+    authUser_repo = UserRepository(db)
+    authUserDb: AuthUser = authUser_repo.findOne(id)
     if not authUserDb:
         raise HTTPException(status_code=404, detail="AuthUser not found")
 
@@ -132,38 +166,3 @@ def delete(
 
     jsonResult = jsonable_encoder(authUserDb)
     return JSONResponse(jsonResult)
-
-
-@router.post('/{id}/role/add', response_model=AuthUserRoleModel, name="admn_auth_user_addRole", status_code=201)
-def addRole(
-    id: Annotated[int, Path(title="AuthRole id")],
-    model: AuthRoleAddModel,
-    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
-    db: Session = Depends(get_db)
-):
-    if(not UserRepository(db).findOne(id)):
-        raise HTTPException(status_code=404, detail="AuthUser not exist")
-    if(not RoleRepository(db).findOneId(model.roleId)):
-        raise HTTPException(status_code=404, detail="Role id not exist")
-    if UserRoleRepository(db).findUserAndRole(id, model.roleId):
-        raise HTTPException(status_code=404, detail="UserRole already exist")
-    authRole = AuthUserRole(userId=id, roleId=model.roleId)
-    db.add(authRole)
-    db.commit()
-    db.refresh(authRole)
-    return authRole
-
-
-@router.delete('/{id}/role/{roleId}/remove', response_model=AuthUserRoleModel, name="admn_auth_user_deleteRole")
-def deleteRole(
-    id: Annotated[int, Path(title="AuthRole id")],
-    roleId: Annotated[int, Path(title="AuthRole id")],
-    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
-    db: Session = Depends(get_db)
-):
-    userRole =  UserRoleRepository(db).findUserAndRole(id, roleId)
-    if(not userRole):
-        raise HTTPException(status_code=404, detail="UserRole not exist exist")
-    db.delete(userRole)
-    db.commit()
-    return userRole

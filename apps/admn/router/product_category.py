@@ -87,17 +87,17 @@ def update(
     db: Session = Depends(get_db)
 ):
     productCategory_repo = ProductCategoryRepository(db)
-    productCategoryDb = productCategory_repo.findOneId(id)
-    if not productCategoryDb:
+    productCategory = productCategory_repo.findOneId(id)
+    if not productCategory:
         raise HTTPException(status_code=404, detail="ProductCategory not found")
 
-    productCategoryDb.name = updateModel.name
-    productCategoryDb.description = updateModel.description
+    productCategory.name = updateModel.name
+    productCategory.description = updateModel.description
 
     db.commit()
-    db.refresh(productCategoryDb)    
+    db.refresh(productCategory)    
     
-    result = jsonable_encoder(productCategoryDb)
+    result = jsonable_encoder(productCategory)
 
     return JSONResponse(result)
 

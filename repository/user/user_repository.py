@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql import select
 
 # Schema
-from schema.auth_module import AuthUser, AuthRole, AuthUserRole, AuthRolePermission, AuthUserPasswordReset
+from schema.auth_module import AuthUser, AuthRole, AuthUserPasswordReset
 # Model
 from model.modules.auth import models
 from model.modules.auth.models import PaginationModel
@@ -20,7 +20,7 @@ class UserRepository:
 
     def findAll(self, model: AuthUserPaginateResponseModel):
         qb =  self.db.query(AuthUser)\
-            .options(joinedload(AuthUser.roles))\
+            .options(joinedload(AuthUser.authRole))\
             .filter(AuthUser.isDeleted != True)
             
         if not model:
@@ -29,7 +29,6 @@ class UserRepository:
         qb = qb.filter(and_(
                  AuthUser.firstname.ilike(f"%{model.filter.firstname if model.filter.firstname else ''}%"),
                  AuthUser.lastname.ilike(f"%{model.filter.lastname if model.filter.lastname else ''}%"),
-                 AuthUser.userType.ilike(f"%{model.filter.userType if model.filter.userType else ''}%"),
                  AuthUser.email.ilike(f"%{model.filter.email if model.filter.email else ''}%"),
                  AuthUser.mobile.ilike(f"%{model.filter.mobile if model.filter.mobile else ''}%"),
              ))
@@ -48,7 +47,6 @@ class UserRepository:
     
     def findFiltered(self, model: models.UserFilterModel ):
         qb =  self.db.query(AuthUser)\
-            .options(joinedload(AuthUser.roles))\
             .filter(AuthUser.isDeleted == False)\
             .order_by(AuthUser.timeCreated.desc())
             
@@ -67,18 +65,21 @@ class UserRepository:
 
     def findOne(self, id: int):
         return self.db.query(AuthUser)\
-            .options(joinedload(AuthUser.roles))\
             .filter(AuthUser.id == id).first()
+            
+    def findEmployee(self, id = int):
+        return self.db.query(AuthUser)\
+            .filter(AuthUser.authRoleId == id)\
+            .all()
 
     def findOneByEmail(self, email: str):
         return self.db.query(AuthUser)\
-            .options(joinedload(AuthUser.roles))\
+            .options(joinedload(AuthUser.authRole))\
             .filter(AuthUser.email == email)\
             .first()
 
     def findOneByPassword(self, oldpassword: str):
         return self.db.query(AuthUser)\
-            .options(joinedload(AuthUser.roles))\
             .filter(AuthUser.password == oldpassword).first()
 
     def getPaginateResult(self, listRequest: AuthUserListRequestModel):
@@ -92,8 +93,6 @@ class UserRepository:
             filters.append(AuthUser.firstname.ilike(f"%{listRequest.filter.firstname}%"))
         if listRequest.filter.lastname:
             filters.append(AuthUser.lastname.ilike(f"%{listRequest.filter.lastname}%"))
-        if listRequest.filter.userType:
-            filters.append(AuthUser.userType.ilike(f"%{listRequest.filter.userType}%"))
         if listRequest.filter.email:
             filters.append(AuthUser.email.ilike(f"%{listRequest.filter.email}%"))
         if listRequest.filter.mobile:
@@ -202,40 +201,6 @@ def convert_columns(columns):
     return list(map(lambda x: column(x), columns.split('-')))
 
 
-class RoleRepository:
-    def __init__(self, db: Session):
-        self.db = db
-    def findOneId(self, id: int):
-        return self.db.query(AuthRole)\
-        .options(joinedload(AuthRole.permissions))\
-            .filter(AuthRole.id == id).first()
-    def findOne(self, group_name: str):
-        return self.db.query(AuthRole)\
-            .filter(AuthRole.name == group_name).first()
-    def findAll(self): 
-        return self.db.query(AuthRole).all()
-
-
-class UserRoleRepository:
-    def __init__(self, db: Session):
-        self.db = db
-    def findAll(self): 
-        return self.db.query(AuthUserRole).all()
-    def findUserAndRole(self, user: int, role: int): 
-        return self.db.query(AuthUserRole)\
-            .filter(AuthUserRole.userId == user).filter(AuthUserRole.roleId == role).first()
-
-
-class AuthRolePermissionRepository:
-    def __init__(self, db: Session):
-        self.db = db
-    def findAll(self): 
-        return self.db.query(AuthRolePermission).all()
-    def findRoleAndPermission(self, role: int, permission: int): 
-        return self.db.query(AuthRolePermission)\
-            .filter(AuthRolePermission.roleId == role).filter(AuthRolePermission.permissionId == permission).first()
-
-
 class AuthUserPasswordResetRepository:
     def __init__(self, db: Session):
         self.db = db
@@ -263,4 +228,23 @@ class AuthUserPasswordResetRepository:
         return self.db.query(AuthUserPasswordReset)\
             .filter(AuthUserPasswordReset.token == reset_token)\
             .filter(AuthUserPasswordReset.timeExpire > datetime.now())\
+            .first()
+            
+
+class RoleRepository:
+    
+    def __init__(self, db: Session):
+        self.db = db
+
+    def findAll(self):
+        return self.db.query(AuthRole).all()
+    
+    def findOneName(self, name: str):
+        return self.db.query(AuthRole)\
+            .filter(AuthRole.name == name)\
+            .first()
+    
+    def findOneId(self, id: int):
+        return self.db.query(AuthRole)\
+            .filter(AuthRole.id == id)\
             .first()

@@ -7,6 +7,7 @@ from alembic import context
 from config.database import Base
 from schema import auth_module
 from schema import product_module
+from schema import action_module
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

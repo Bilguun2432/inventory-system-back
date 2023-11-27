@@ -1,34 +1,41 @@
 from datetime import datetime
-from typing import Optional
-
+from typing import Optional, Union
 from pydantic import BaseModel, ConfigDict
+from fastapi import UploadFile, File
 
 # Model
 from model.common import PaginateRequestModel, SortModel
+from model.modules.product.category_models import ProductCategoryModel
 
 
 class ProductModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
     categoryId: Optional[int]
     name: str
     price: Optional[int]
     unit: int
     description: Optional[str]
-    packageCode: Optional[str] | None = None
-    productCompletionId: int | None = None
     userCreatedId: int | None = None
     enabled: bool
     isDeleted: bool
     timeCreated: datetime
+    imagePath: Optional[str]
+    
+    category: ProductCategoryModel
 
 
 class ProductCreateModel(BaseModel):
     category: str
     name: str
+    description: Optional[str] | None = None 
+    price:  int
+    unit: int
+    enabled: Optional[bool] | None = None
+    
+class ProductUpdateModel(BaseModel):
+    name: str
     description: Optional[str] | None = None
-    price:  Optional[int] = None
+    price:  int
     unit: int
     enabled: Optional[bool] | None = None
 

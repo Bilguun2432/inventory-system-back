@@ -5,19 +5,7 @@ from pydantic import BaseModel, root_validator
 
 # Model
 from model.common import PaginateRequestModel, SortModel
-
-
-class AuthUserType(str, Enum):
-    ADMIN = "ADMIN"
-    USER = "USER"
-    MERCHANT = "MERCHANT"
-    APP = "APP"
-
-
-class AuthUserRoleListModel(BaseModel):
-    id: int
-    name: str
-    description: str
+from model.modules.auth.role_models import AuthRoleModel
 
 
 class AuthUserModel(BaseModel):
@@ -26,9 +14,9 @@ class AuthUserModel(BaseModel):
     lastname: str
     email: str
     mobile: str
-    userType: AuthUserType
-    timeCreated: datetime
-    roles: list[AuthUserRoleListModel]
+    authRoleId: int
+    
+    authRole: AuthRoleModel
 
     
 class AuthUserCreateModel(BaseModel):
@@ -36,22 +24,7 @@ class AuthUserCreateModel(BaseModel):
     lastname: str
     email: str
     mobile: str
-    userType: AuthUserType
-    # password: str
-
-    @root_validator(pre=True)
-    def check_passwords_match(cls, values):
-        if not isinstance(values.get('firstname'), str) :
-            raise ValueError("firstname is string.")
-        if not isinstance(values.get('lastname'), str) :
-            raise ValueError("lastname is string.")
-        if not isinstance(values.get('email'), str) :
-            raise ValueError("email is string.")
-        if not isinstance(values.get('mobile'), str) :
-            raise ValueError("mobile is string.")
-        if values.get('userType') is not None and not values.get('userType') in AuthUserType.__members__:
-            raise ValueError("userType is AuthUserType.",)
-        return values
+    authRoleId: int
 
 
 class AuthUserUpdateModel(BaseModel):
@@ -59,21 +32,7 @@ class AuthUserUpdateModel(BaseModel):
     lastname: str
     email: str
     mobile: str
-    userType: AuthUserType
-
-    @root_validator(pre=True)
-    def check_passwords_match(cls, values):
-        if not isinstance(values.get('firstname'), str) :
-            raise ValueError("firstname is string.")
-        if not isinstance(values.get('lastname'), str) :
-            raise ValueError("lastname is string.")
-        if not isinstance(values.get('email'), str) :
-            raise ValueError("email is string.")
-        if not isinstance(values.get('mobile'), str) :
-            raise ValueError("mobile is string.")
-        if values.get('userType') is not None and not values.get('userType') in AuthUserType.__members__:
-                raise ValueError("userType is AuthUserType.",)
-        return values
+    authRoleId: int
 
 
 class AuthUserPasswordResetModel(BaseModel):
@@ -104,24 +63,10 @@ class AuthUserPasswordResetUpdateModel(BaseModel):
 class NewPasswordEmailModel(BaseModel):
     password: str
 
-    @root_validator(pre=True)
-    def check_passwords_match(cls, values):
-        if not isinstance(values.get('password'), str) :
-            raise ValueError("password is string.")
-        return values
-
 
 class NewPasswordPasswordModel(BaseModel):
     currentpassword: str
     password: str
-
-    @root_validator(pre=True)
-    def check_passwords_match(cls, values):
-        if not isinstance(values.get('currentpassword'), str) :
-            raise ValueError("currentpassword is string.")
-        if not isinstance(values.get('password'), str) :
-            raise ValueError("password is string.")
-        return values
     
 
 class AuthUserRoleModel(BaseModel):
@@ -135,7 +80,6 @@ class AuthUserRoleModel(BaseModel):
 class AuthUserFilterModel(BaseModel):
     firstname: Optional[str] | None = None
     lastname: Optional[str] | None = None
-    userType: Optional[str] | None = None
     email: Optional[str] | None = None
     mobile: Optional[int] | None = None   
 
@@ -150,3 +94,6 @@ class AuthUserPaginateResponseModel(BaseModel):
     filter: AuthUserFilterModel
     sort: SortModel
     pagination: PaginateRequestModel
+    
+class AuthUserMailModel(BaseModel):
+    email: str

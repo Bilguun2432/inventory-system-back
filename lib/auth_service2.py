@@ -75,7 +75,6 @@ async def getAccessUser(
     
 
     authUser = db.query(AuthUser)\
-            .options(joinedload(AuthUser.roles))\
             .filter(AuthUser.id == userInfo.id).first()
 
 

@@ -73,8 +73,7 @@ async def login(
         )
 
     roleIds = []
-    for authRole in authUser.roles:
-        roleIds.append(authRole.id)
+    roleIds.append(authUser.authRoleId)
 
     userData = models.UserPayloadModel(
         id=authUser.id,
