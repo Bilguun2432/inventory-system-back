@@ -17,7 +17,7 @@ from schema.auth_module import AuthUser
 
 router = APIRouter(
     prefix="/action/status",
-    tags=["AuthUser"],
+    tags=["ActionStatus"],
     # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found auth"}},
 )

@@ -16,3 +16,34 @@ class ActionRepository:
     def findAll(self):
         return self.db.query(Action)\
             .all()
+    
+    def findSoldAdmin(self):
+        return self.db.query(Action)\
+            .filter(Action.actionStatusId == 2)\
+            .all()
+    
+    def findSoldEmployee(self, id: int):
+        return self.db.query(Action)\
+            .options(joinedload(Action.Product))\
+            .filter(Action.authUserId == id)\
+            .filter(Action.actionStatusId == 2)\
+            .all()
+    
+    def findBrokenEmployee(self, id: int):
+        return self.db.query(Action)\
+            .options(joinedload(Action.Product))\
+            .filter(Action.authUserId == id)\
+            .filter(Action.actionStatusId == 1)\
+            .all()
+    
+    def findReturnedEmployee(self, id: int):
+        return self.db.query(Action)\
+            .options(joinedload(Action.Product))\
+            .filter(Action.authUserId == id)\
+            .filter(Action.actionStatusId == 3)\
+            .all()
+    
+    def findArchive(self):
+        return self.db.query(Action)\
+            .options(joinedload(Action.Product))\
+            .all()

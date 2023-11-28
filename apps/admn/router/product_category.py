@@ -56,10 +56,9 @@ def postIndex(
 @router.post('/create', response_model=ProductCategoryModel, name="admn_product_category_create", status_code=201)
 def create(
     createModel: ProductCategoryCreateModel, 
-    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
+    # accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     db: Session = Depends(get_db)
 ):
-    print("hehe", createModel)
     productCategory_repo = ProductCategoryRepository(db)
     
     productCategory = productCategory_repo.findOneName(name = createModel.name)
@@ -67,7 +66,7 @@ def create(
         raise HTTPException(status_code=400, detail="Product category already exists")
     
     productCategoryCreateData = createModel.dict()
-    productCategoryCreateData['userCreatedId'] = accessUser.id
+    # productCategoryCreateData['userCreatedId'] = accessUser.id
     productCategoryCreated = ProductCategory(**productCategoryCreateData)
     db.add(productCategoryCreated)
 

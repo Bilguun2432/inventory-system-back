@@ -56,7 +56,7 @@ def postIndex(
 @router.post('/create', response_model=AuthUserModel, name="admn_auth_user_create", status_code=201)
 def create(
     model: AuthUserCreateModel,
-    accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
+    # accessUser: Annotated[AuthUser, Depends(auth_service2.getAccessUser)],
     db: Session = Depends(get_db)
 ):
     authRole_repo = RoleRepository(db)

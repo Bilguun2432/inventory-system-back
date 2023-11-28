@@ -5,7 +5,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from config.database import get_db
-from googletrans import Translator
 from fastapi import File, UploadFile
 import os, datetime
 from fastapi import Form, File, UploadFile

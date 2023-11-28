@@ -5,7 +5,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from config.database import get_db
-from googletrans import Translator
 from sqlalchemy import inspect
 
 # Lib
@@ -25,7 +24,7 @@ from schema.product_module import AuthUserProduct
 
 router = APIRouter(
     prefix="/transfer",
-    tags=["Product"],
+    tags=["Transfer"],
     # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
 )
